@@ -25,7 +25,7 @@ data_to_publish = {
                      load_average: load_average,
                      cpu_top_proc: cpu_top_proc,
                      memory_top_proc: memory_top_proc,
-                     disk_free_gb: disk_gb_available,+
+                     disk_free_gb: disk_gb_available,
                      date: Time.now
                    }
 
