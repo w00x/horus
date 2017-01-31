@@ -2,40 +2,34 @@
 
 require 'ap'
 require 'byebug'
+require 'usagewatch'
+require 'sys/filesystem'
+require 'firebase'
+require 'yaml'
 
-def load_avg
-  File.open("/proc/loadavg", "r") do |f|
-    lines = f.readlines
-    if lines.size > 0
-      avg_str = lines[0].gsub('\n','')
-      avg = avg_str.split(' ')
-      if avg.size > 1
-        return avg[0].to_f
-      else
-        return nil
-      end
-    end
-  end
-end
+include Sys
+usw = Usagewatch
 
-def cpu_percent
-  File.open("/proc/stat", "r") do |f|
-    lines = f.readlines
-    if lines.size > 0
-      cpu_str = lines[0].gsub('\n','')
-      cpu = cpu_str.split(' ')
-      if cpu.size == 11
-        tctsb = cpu[1..8].map { |c| c.to_i }.inject(0){|sum,x| sum + x } #Total CPU time since boot
-        tcitcb = cpu[4..5].map { |c| c.to_i }.inject(0){|sum,x| sum + x } #Total CPU Idle time since boot
-        tcutsb = tctsb - tcitcb #Total CPU usage time since boot
-        tcp = tcutsb/tctsb*100 #Total CPU percentage
-        byebug
-        return tcp
-      else
-        return nil
-      end
-    end
-  end
-end
+config = YAML.load_file('config.yml')
+base_uri = config["base_uri"]
 
-cpu_percent
+firebase = Firebase::Client.new(base_uri)
+
+cpu_used = usw.uw_cpuused
+load_average = usw.uw_load
+cpu_top_proc = usw.uw_cputop
+memory_top_proc= usw.uw_memtop
+
+stat = Sys::Filesystem.stat("/")
+disk_gb_available = (stat.block_size.to_f * stat.blocks_available.to_f / 1024 / 1024 / 1024).round(2)
+
+data_to_publish = {
+                     cpu: cpu_used,
+                     load_average: load_average,
+                     cpu_top_proc: cpu_top_proc,
+                     memory_top_proc: memory_top_proc,
+                     disk_free_gb: disk_gb_available
+                   }
+
+firebase.push("historico", data_to_publish)
+firebase.set("now", data_to_publish)
