@@ -1,1 +1,12 @@
-base_uri: ''
+base_uri: '' #URL to firebase DB
+historic_max_size: 4320 # 3 days
+smtp:
+  url_server: ''
+  port: 25
+  url_from: ''
+  user: ''
+  password: ''
+  type: 'plain'
+restrictions:
+  disk_min_free_size: 0
+  mail_notification: ''
